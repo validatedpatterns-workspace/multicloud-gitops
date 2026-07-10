@@ -45,22 +45,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Check if the branch already exists on the remote
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            git reset --hard origin/main
-            git checkout main -- .
-            # Re-run the update on the branch
-            podman run --pull=newer -v "$PWD:$PWD:z" -w "$PWD" quay.io/validatedpatterns/patternizer:latest update
-            git add -A
-            if git diff --cached --quiet; then
-              echo "Existing PR branch is already up to date"
-              exit 0
-            fi
-          else
-            git checkout -b "$BRANCH"
-          fi
+          # Create or reset the branch to current HEAD (main) and switch to it.
+          # -B handles both cases: creates if missing, resets if it exists.
+          # Staged changes are preserved since the target commit is the same.
+          git checkout -B "$BRANCH"
 
           git commit -m "chore: update patternizer-managed files"
           git push --force-with-lease origin "$BRANCH"
